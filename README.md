@@ -118,12 +118,12 @@ sendMail: {
 
 
 ## How to use
-1. by `notification` **SELFIE_SHOOT**
+1. by `notification` **TAKE-SELFIE**
 - Your other module can make an order to take a picture (Button, Voice Commander, Sensors,...)
 ```js
-this.sendNotification("SELFIE_SHOOT")
+this.sendNotification("TAKE-SELFIE")
 //or
-this.sendNotification("SELFIE_SHOOT", {
+this.sendNotification("TAKE-SELFIE", {
   option: {
     shootCountdown: 1,
     displayResult: false,
@@ -133,7 +133,7 @@ this.sendNotification("SELFIE_SHOOT", {
   }
 })
 //or
-this.sendNotification("SELFIE_SHOOT", {
+this.sendNotification("TAKE-SELFIE", {
   option: { ... },
   callback: (result) => {
     console.log(result) // It will have result.path and result.uri

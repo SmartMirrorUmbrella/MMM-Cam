@@ -154,6 +154,21 @@ Module.register("MMM-Cam", {
 		if (noti == "WEB_REQUEST") {
 			this.shoot(payload);
 		}
+		if (noti == "TAKE-SELFIE") {
+			var session = {};
+			var pl = {
+				option: {},
+				callback:null,
+			};
+			pl = Object.assign({}, pl, payload);
+			if (typeof pl.callback == "function") {
+				key = Date.now() + Math.round(Math.random() * 1000);
+				this.session[key] = pl.callback;
+				session["key"] = key;
+				session["ext"] = "CALLBACK";
+			}
+			this.shoot(pl.option, session);
+		}
 	},
 
 	notificationReceived: function(noti, payload, sender) {
@@ -161,7 +176,7 @@ Module.register("MMM-Cam", {
 			this.prepare();
 			//this.shoot()
 		}
-		if (noti == "SELFIE_SHOOT") {
+		if (noti == "TAKE-SELFIE") {
 			var session = {};
 			var pl = {
 				option: {},
