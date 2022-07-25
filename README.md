@@ -1,8 +1,8 @@
-# MMM-Selfieshot
+# MMM-Cam
 Taking a Selfie with USB cam on MagicMirror. (Pi CAM will be supported later.)
 
 ## Screenshot
-![](https://raw.githubusercontent.com/eouia/MMM-Selfieshot/master/screenshot.png)
+![](https://raw.githubusercontent.com/eouia/MMM-Cam/master/screenshot.png)
 
 
 ## New Updates
@@ -34,8 +34,8 @@ brew install imagesnap
 ### Install
 ```sh
 cd <YOUR_MAGIC_MIRROR_DIRECTORY>/modules
-git clone https://github.com/eouia/MMM-Selfieshot
-cd MMM-Selfieshot
+git clone https://github.com/eouia/MMM-Cam
+cd MMM-Cam
 npm install
 ```
 
@@ -46,7 +46,7 @@ npm install
 ```js
 {
 	disabled: false,
-	module: "MMM-Selfieshot",
+	module: "MMM-Cam",
 	config: {}
 }
 ```
@@ -55,7 +55,7 @@ To place a button on the mirror that you can click or touch, you will have to in
 ```js
 {
   disabled: false,
-  module: "MMM-Selfieshot",
+  module: "MMM-Cam",
   position: "bottom_left",
   config: {
     displayButton: "portrait"

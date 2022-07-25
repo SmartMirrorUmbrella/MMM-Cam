@@ -1,4 +1,4 @@
-Module.register("MMM-Selfieshot", {
+Module.register("MMM-Cam", {
 	defaults: {
 		debug: false,
 		storePath: "./photos",
@@ -42,7 +42,7 @@ Module.register("MMM-Selfieshot", {
 	},
 
 	getStyles: function() {
-		return ["MMM-Selfieshot.css", "font-awesome.css"];
+		return ["MMM-Cam.css", "font-awesome.css"];
 	},
 
 	getCommands: function(commander) {
@@ -136,7 +136,7 @@ Module.register("MMM-Selfieshot", {
 		var shutter = document.createElement("audio");
 		shutter.classList.add("shutter");
 		if (this.config.playShutter) {
-			shutter.src = "modules/MMM-Selfieshot/" + this.config.shutterSound;
+			shutter.src = "modules/MMM-Cam/" + this.config.shutterSound;
 		}
 		dom.appendChild(shutter);
 
@@ -259,7 +259,7 @@ Module.register("MMM-Selfieshot", {
 		var con = document.querySelector("#SELFIE");
 		if (showing) con.classList.toggle("shown");
 		var rd = document.querySelector("#SELFIE .result");
-		rd.style.backgroundImage = `url(modules/MMM-Selfieshot/photos/${result.uri})`;
+		rd.style.backgroundImage = `url(modules/MMM-Cam/photos/${result.uri})`;
 		if (showing) rd.classList.toggle("shown");
 		setTimeout(()=>{
 			if (showing) rd.classList.toggle("shown");
