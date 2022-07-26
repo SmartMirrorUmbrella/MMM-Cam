@@ -1,21 +1,20 @@
 Module.register("MMM-Cam", {
 	defaults: {
-		debug: false,
-		storePath: "./photos",
+		debug: true,
 		width:1280,
 		height:720, // In some webcams, resolution ratio might be fixed so these values might not be applied.
 		quality: 100, //Of course.
 		device: null, // For default camera. Or,
 		// device: "USB Camera" <-- See the backend log to get your installed camera name.
 		shootMessage: "Smile!",
-		shootCountdown: 5,
+		shootCountdown: 1,
 		displayCountdown: true,
 		displayResult: true,
 		displayButton: null, // null = no button or name of FontAwesome icon
 		playShutter: true,
 		shutterSound: "shutter.mp3",
-		useWebEndpoint: "selfie", // It willl become `https://YOUR_MM_IP_OR_DOMAIN::PORT/selfie`
-		resultDuration: 1000 * 5,
+		useWebEndpoint: null, // It willl become `https://YOUR_MM_IP_OR_DOMAIN::PORT/selfie`
+		resultDuration: 1000 * 120,
 		sendTelegramBot: true,
 		sendMail: null, // or your email config (option for nodemailer https://nodemailer.com/about/)
 		/*
@@ -148,10 +147,10 @@ Module.register("MMM-Cam", {
 	},
 
 	socketNotificationReceived: function(noti, payload) {
-		if (noti == "SHOOT_RESULT") {
+		if (noti == "__SHOOT-RESULT__") {
 			this.postShoot(payload);
 		}
-		if (noti == "WEB_REQUEST") {
+		if (noti == "__WEB-REQUEST__") {
 			this.shoot(payload);
 		}
 		if (noti == "TAKE-SELFIE") {
@@ -169,6 +168,27 @@ Module.register("MMM-Cam", {
 			}
 			this.shoot(pl.option, session);
 		}
+		if (noti == "EXIT-CAM") {
+			this.debugLog("Notifcation received to close MMM-Cam.")
+			this.exitCam();
+		}
+
+	},
+	
+	debugLog: function(...msgs) {
+		if (this.config.debug) {
+			msgs.forEach(msg => {
+				console.log(`MMM-Cam [DEBUG]: ${msg}`);
+			})
+		}
+	},
+	
+	exitCam: function() {
+		if (this.config.displayResult) {
+			document.querySelector("#SELFIE").classList.remove("shown");
+			document.querySelector("#SELFIE .result").classList.remove("shown");
+		}
+		clearTimeout(this.timeoutId)
 	},
 
 	notificationReceived: function(noti, payload, sender) {
@@ -191,19 +211,18 @@ Module.register("MMM-Cam", {
 			}
 			this.shoot(pl.option, session);
 		}
-		if (noti == "SELFIE_EMPTY_STORE") {
+		if (noti == "SELFIE-EMPTY-STORE") {
 			this.sendSocketNotification("EMPTY");
 		}
-		if (noti == "SELFIE_LAST") {
+		if (noti == "SELFIE-LAST") {
 			this.showLastPhoto(this.lastPhoto);
 		}
 	},
 
 	shoot: function(option={}, session={}) {
-		var showing = (option.hasOwnProperty("displayCountdown")) ? option.displayCountdown : this.config.displayCountdown;
+		var showing = this.config.displayCountdown;
 		var sound = (option.hasOwnProperty("playShutter")) ? option.playShutter : this.config.playShutter;
 		var countdown = (option.hasOwnProperty("shootCountdown")) ? option.shootCountdown : this.config.shootCountdown;
-		if (option.hasOwnProperty("displayResult")) session["displayResult"] = option.displayResult;
 		var con = document.querySelector("#SELFIE");
 		if (showing) con.classList.toggle("shown");
 		var win = document.querySelector("#SELFIE .window");
@@ -236,7 +255,6 @@ Module.register("MMM-Cam", {
 
 		var at = false;
 		if (result.session) {
-			if (result.session.hasOwnProperty("displayResult")) { showing = result.session.displayResult; }
 			if (result.session.ext == "TELBOT") {
 				at = true;
 				this.cmdSelfieResult(result.session.key, result.path);
@@ -264,21 +282,25 @@ Module.register("MMM-Cam", {
 		}
 		this.sendNotification("SELFIE_RESULT", result);
 		this.sendNotification("GPHOTO_UPLOAD", result.path);
+		this.sendNotification("MYCROFT_COMMAND", {
+			eventName: "cam-skill:selfie_taken",
+			data: {
+				selfie: result.path,
+				resultDuration: this.config.resultDuration
+			}
+		})
 		this.lastPhoto = result;
 		this.showLastPhoto(result);
+		this.debugLog("Selfie taken notification sent to mycroft.")
 	},
 
 	showLastPhoto: function(result) {
-		if (this.config.debug) console.log("Showing last photo.");
-		var showing = this.config.displayResult;
+		this.debugLog("Showing last photo.");
 		var con = document.querySelector("#SELFIE");
-		if (showing) con.classList.toggle("shown");
+		if (this.config.displayResult) con.classList.toggle("shown");
 		var rd = document.querySelector("#SELFIE .result");
 		rd.style.backgroundImage = `url(modules/MMM-Cam/photos/${result.uri})`;
-		if (showing) rd.classList.toggle("shown");
-		setTimeout(()=>{
-			if (showing) rd.classList.toggle("shown");
-			if (showing) con.classList.toggle("shown");
-		}, this.config.resultDuration);
+		if (this.config.displayResult) rd.classList.toggle("shown");
+		this.timeoutId = setTimeout(this.exitCam, this.config.resultDuration);
 	}
 });

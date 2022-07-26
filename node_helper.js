@@ -19,6 +19,7 @@ module.exports = NodeHelper.create({
 	},
 
 	initialize: function(payload) {
+		this.photoDir = path.resolve(__dirname, "photos");
 		this.config = payload;
 		if (payload.debug) {
 			log = (...args) => {
@@ -31,7 +32,7 @@ module.exports = NodeHelper.create({
   		this.expressApp.use(bodyParser.urlencoded({extended: true}));
 			this.expressApp.post("/" + payload.useWebEndpoint, (req, res) => {
 				log("External request arrives from", req.ip);
-				this.sendSocketNotification("WEB_REQUEST", req.body);
+				this.sendSocketNotification("__WEB-REQUEST__", req.body);
 				res.status(200).send({status: 200});
 			});
 		}
@@ -69,9 +70,8 @@ module.exports = NodeHelper.create({
 			this.shoot(payload);
 		}
 		if (noti == "EMPTY") {
-			var dir = path.resolve(__dirname, "photos");
-			exec(`rm ${dir}/*.jpg`, (err, sto, ste)=>{
-				log("Cleaning directory:", dir);
+			exec(`rm ${this.photoDir}/*.jpg`, (err, sto, ste)=>{
+				log("Cleaning directory:", this.photoDir);
 				if (err) this.log("Error:", err);
 				if (sto) this.log(sto);
 				if (ste) this.log(ste);
@@ -81,7 +81,7 @@ module.exports = NodeHelper.create({
 
 	shoot: function(payload) {
 		var uri = moment().format("YYMMDD_HHmmss") + ".jpg";
-		var filename = path.resolve(__dirname, "photos", uri);
+		var filename = path.resolve(this.photoDir, uri);
 		var opts = Object.assign ({
 			width: this.config.width ?? 1280,
 			height: this.config.height ?? 720,
@@ -96,13 +96,22 @@ module.exports = NodeHelper.create({
 		NodeWebcam.capture(filename, opts, (err, data)=>{
 			if (err) log("Error:", err);
 			log("Photo is taken:", data);
-			this.sendSocketNotification("SHOOT_RESULT", {
+			this.sendSocketNotification("__SHOOT-RESULT__", {
 				path: data,
 				uri: uri,
 				session: payload.session
 			});
 			this.sendMail(data);
+			this.debugLog("Photo is taken.", `Path: ${data}.`)
 		});
+	},
+
+	debugLog: function(...msgs) {
+		if (this.config.debug) {
+			msgs.forEach(msg => {
+				console.log(msg)
+		})
+	}
 	},
 
 	sendMail: function(filepath) {
