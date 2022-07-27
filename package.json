@@ -1,6 +1,6 @@
 {
   "name": "MMM-Cam",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "description": "(Under development)",
   "main": "MMM-Cam.js",
   "scripts": {
@@ -8,14 +8,14 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/eouia/MMM-Cam.git"
+    "url": "git+https://github.com/SmartMirrorUmbrella/MMM-Cam.git"
   },
-  "author": "eouia0819@gmail.com",
+  "author": "christofferfareseid@gmail.com",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/eouia/MMM-Cam/issues"
+    "url": "https://github.com/SmartMirrorUmbrella/MMM-Cam/issues"
   },
-  "homepage": "https://github.com/eouia/MMM-Cam#readme",
+  "homepage": "https://github.com/SmartMirrorUmbrella/MMM-Cam#readme",
   "dependencies": {
     "node-webcam": "^0.5.0",
   }
