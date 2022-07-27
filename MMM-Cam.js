@@ -7,91 +7,18 @@ Module.register("MMM-Cam", {
 		device: null, // For default camera. Or,
 		// device: "USB Camera" <-- See the backend log to get your installed camera name.
 		shootMessage: "Smile!",
-		shootCountdown: 1,
+		shootCountdown: 3,
 		displayCountdown: true,
 		displayResult: true,
 		displayButton: null, // null = no button or name of FontAwesome icon
 		playShutter: true,
 		shutterSound: "shutter.mp3",
-		useWebEndpoint: null, // It willl become `https://YOUR_MM_IP_OR_DOMAIN::PORT/selfie`
-		resultDuration: 1000 * 120,
-		sendTelegramBot: true,
-		sendMail: null, // or your email config (option for nodemailer https://nodemailer.com/about/)
-		/*
-    sendMail: {
-      transport: {
-        host: 'smtp.gmail.com', // If required.
-        port: 465, // If required.
-        secure: true, // If required.
-        auth: {
-          user: "youremail@gmail.com",
-          pass: "your gmail password"
-        }
-      },
-      message: {
-        from: "youremail@gmail.com"
-        to: "who@where.com",
-        subject: "Selfie",
-        text: "New selfie.",
-      }
-    }
-    */
-		//In some environment (under firewall), you might get Connection Refused error. Allow the port.
-		//gmail has many issues. If possible, use alternative services.
-	},
+		resultDuration: 120,
+		photoDir: "photos",
+},
 
 	getStyles: function() {
 		return ["MMM-Cam.css", "font-awesome.css"];
-	},
-
-	getCommands: function(commander) {
-		commander.add({
-			command: 'selfie',
-			callback: 'cmdSelfie',
-			description: "Take a selfie.",
-		});
-
-		commander.add({
-			command: 'emptyselfie',
-			callback: 'cmdEmptySelfie',
-			description: "Remove all selfie photos."
-		});
-
-		commander.add({
-			command: 'lastselfie',
-			callback: 'cmdLastSelfie',
-			description: 'Display the last selfie shot taken.'
-		});
-	},
-
-	cmdSelfie: function(command, handler) {
-		var countdown = null;
-		if (handler.args) countdown = handler.args;
-		if (!countdown) countdown = this.config.shootCountdown;
-		var session = Date.now();
-		this.session[session] = handler;
-		this.shoot({shootCountdown:countdown}, {key:session, ext:"TELBOT"});
-	},
-
-	cmdSelfieResult: function(key, path) {
-		var handler = this.session[key];
-		handler.reply("PHOTO_PATH", path);
-		this.session[key] = null;
-		delete this.session[key];
-	},
-
-	cmdLastSelfie: function(command, handler) {
-		if (this.lastPhoto) {
-			handler.reply("PHOTO_PATH", this.lastPhoto.path);
-			this.showLastPhoto(this.lastPhoto);
-		} else {
-			handler.reply("TEXT", "Couldn't find the last selfie.");
-		}
-	},
-
-	cmdEmptySelfie: function(command, handler) {
-		this.sendSocketNotification("EMPTY");
-		handler.reply("TEXT", "done.");
 	},
 
 	start: function() {
@@ -150,9 +77,7 @@ Module.register("MMM-Cam", {
 		if (noti == "__SHOOT-RESULT__") {
 			this.postShoot(payload);
 		}
-		if (noti == "__WEB-REQUEST__") {
-			this.shoot(payload);
-		}
+
 		if (noti == "TAKE-SELFIE") {
 			var session = {};
 			var pl = {
@@ -172,7 +97,6 @@ Module.register("MMM-Cam", {
 			this.debugLog("Notifcation received to close MMM-Cam.")
 			this.exitCam();
 		}
-
 	},
 	
 	debugLog: function(...msgs) {
@@ -184,32 +108,17 @@ Module.register("MMM-Cam", {
 	},
 	
 	exitCam: function() {
-		if (this.config.displayResult) {
+		const self = this
+		if (self.config.displayResult) {
 			document.querySelector("#SELFIE").classList.remove("shown");
 			document.querySelector("#SELFIE .result").classList.remove("shown");
 		}
-		clearTimeout(this.timeoutId)
 	},
 
 	notificationReceived: function(noti, payload, sender) {
 		if (noti == "DOM_OBJECTS_CREATED") {
 			this.prepare();
 			//this.shoot()
-		}
-		if (noti == "TAKE-SELFIE") {
-			var session = {};
-			var pl = {
-				option: {},
-				callback:null,
-			};
-			pl = Object.assign({}, pl, payload);
-			if (typeof pl.callback == "function") {
-				key = Date.now() + Math.round(Math.random() * 1000);
-				this.session[key] = pl.callback;
-				session["key"] = key;
-				session["ext"] = "CALLBACK";
-			}
-			this.shoot(pl.option, session);
 		}
 		if (noti == "SELFIE-EMPTY-STORE") {
 			this.sendSocketNotification("EMPTY");
@@ -252,34 +161,18 @@ Module.register("MMM-Cam", {
 	},
 
 	postShoot: function(result) {
-
-		var at = false;
-		if (result.session) {
-			if (result.session.ext == "TELBOT") {
-				at = true;
-				this.cmdSelfieResult(result.session.key, result.path);
+		if (result.session.ext == "CALLBACK") {
+			if (this.session.hasOwnProperty(result.session.key)) {
+				callback = this.session[result.session.key];
+				callback({
+					path: result.path,
+					uri: result.uri
+				});
+				this.session[result.session.key] = null;
+				delete this.session[result.session.key];
 			}
-			if (result.session.ext == "CALLBACK") {
-				if (this.session.hasOwnProperty(result.session.key)) {
-					callback = this.session[result.session.key];
-					callback({
-						path: result.path,
-						uri: result.uri
-					});
-					this.session[result.session.key] = null;
-					delete this.session[result.session.key];
-				}
-			}
-		} else {
-
 		}
-		if (this.config.sendTelegramBot && !at) {
-			this.sendNotification("TELBOT_TELL_ADMIN", {
-				type: "PHOTO_PATH",
-				path: result.path
-			});
-			this.sendNotification("TELBOT_TELL_ADMIN", "New Selfie");
-		}
+		
 		this.sendNotification("SELFIE_RESULT", result);
 		this.sendNotification("GPHOTO_UPLOAD", result.path);
 		this.sendNotification("MYCROFT_COMMAND", {
@@ -299,8 +192,7 @@ Module.register("MMM-Cam", {
 		var con = document.querySelector("#SELFIE");
 		if (this.config.displayResult) con.classList.toggle("shown");
 		var rd = document.querySelector("#SELFIE .result");
-		rd.style.backgroundImage = `url(modules/MMM-Cam/photos/${result.uri})`;
+		rd.style.backgroundImage = `url(${this.data.path}/${this.config.photoDir}/${result.uri})`;
 		if (this.config.displayResult) rd.classList.toggle("shown");
-		this.timeoutId = setTimeout(this.exitCam, this.config.resultDuration);
 	}
 });

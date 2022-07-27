@@ -2,8 +2,7 @@ const NodeWebcam = require( "node-webcam" );
 const moment = require("moment");
 const path = require("path");
 const exec = require("child_process").exec;
-var nodemailer = require("nodemailer");
-const bodyParser = require("body-parser");
+var fs = require('fs');
 
 var log = () => {
 	//do nothing
@@ -19,22 +18,13 @@ module.exports = NodeHelper.create({
 	},
 
 	initialize: function(payload) {
-		this.photoDir = path.resolve(__dirname, "photos");
 		this.config = payload;
+		this.photoDir = path.resolve(__dirname, this.config.photoDir);
+		if (!fs.existsSync(this.photoDir)) fs.mkdirSync(this.photoDir);
 		if (payload.debug) {
 			log = (...args) => {
 				console.log("[SELFIE]", ...args);
 			};
-		}
-		if (payload.useWebEndpoint) {
-			log("Web server endpoint is activated:", `/${payload.useWebEndpoint} [POST]`);
-			this.expressApp.use(bodyParser.json());
-  		this.expressApp.use(bodyParser.urlencoded({extended: true}));
-			this.expressApp.post("/" + payload.useWebEndpoint, (req, res) => {
-				log("External request arrives from", req.ip);
-				this.sendSocketNotification("__WEB-REQUEST__", req.body);
-				res.status(200).send({status: 200});
-			});
 		}
 		var Webcam = NodeWebcam.create({});
 		Webcam.list((list)=>{
@@ -101,7 +91,6 @@ module.exports = NodeHelper.create({
 				uri: uri,
 				session: payload.session
 			});
-			this.sendMail(data);
 			this.debugLog("Photo is taken.", `Path: ${data}.`)
 		});
 	},
@@ -110,31 +99,7 @@ module.exports = NodeHelper.create({
 		if (this.config.debug) {
 			msgs.forEach(msg => {
 				console.log(msg)
-		})
-	}
-	},
-
-	sendMail: function(filepath) {
-		if (this.config.sendMail && typeof this.config.sendMail == "object") {
-			try {
-				var transport = nodemailer.createTransport(this.config.sendMail.transport);
-				var msg = Object.assign({}, this.config.sendMail.message, {attachments: [{path: filepath}]});
-				transport.sendMail(msg, (err)=>{
-					if (err) {
-						log("Failed to send mail.");
-						log("Error:", err);
-						return;
-					}
-					log("Email sent.");
-					return;
-				});
-			} catch (e) {
-				log("Invalid mail account configuration.");
-				log("Error:", e);
-				return;
-			}
-		} else {
-			return;
+			})
 		}
-	}
+	},
 });
