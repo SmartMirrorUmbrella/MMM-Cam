@@ -14,9 +14,12 @@ module.exports = NodeHelper.create({
 	start: function() {
 		this.devices = [];
 		this.device = false;
-
 	},
 
+ /**
+  * Initialize the selfie module.       
+  * @param {object} payload - The payload object containing the config.       
+  */
 	initialize: function(payload) {
 		this.config = payload;
 		this.photoDir = path.resolve(__dirname, this.config.photoDir);
@@ -50,6 +53,12 @@ module.exports = NodeHelper.create({
 		});
 	},
 
+	
+ /**
+  * Receives a notification from the frontend and performs the appropriate action.
+  * @param {string} noti - The notification to receive.
+  * @param {any} payload - The payload of the notification.
+  */
 	socketNotificationReceived: function(noti, payload) {
 		if (payload.debug) log("Notification received: " + noti);
 		if (noti == "INIT") {
@@ -69,6 +78,17 @@ module.exports = NodeHelper.create({
 		}
 	},
 
+ /**
+  * Takes a photo using the NodeWebcam library.
+  * @param {Object} payload - The payload object containing the following.
+  * @param {Object} payload.options - The webcam options containg the following.
+  * @param {number} payload.options.width - The width of the photo.
+  * @param {number} payload.options.height - The height of the photo.
+  * @param {number} payload.options.quality - The quality of the photo.
+  * @param {number} payload.options.delay - The delay between taking the photo and sending the result.
+  * @param {boolean} payload.options.saveShots - Whether or not to save the photo.
+  * @param {
+  */
 	shoot: function(payload) {
 		var uri = moment().format("YYMMDD_HHmmss") + ".jpg";
 		var filename = path.resolve(this.photoDir, uri);
@@ -95,6 +115,10 @@ module.exports = NodeHelper.create({
 		});
 	},
 
+ /**
+  * Logs the given messages to the console if the debug flag is set.           
+  * @param {...string} msgs - The messages to log.           
+  */
 	debugLog: function(...msgs) {
 		if (this.config.debug) {
 			msgs.forEach(msg => {

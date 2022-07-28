@@ -1,4 +1,7 @@
 Module.register("MMM-Cam", {
+ /**
+  * The default configuration for the plugin.           
+  */
 	defaults: {
 		debug: true,
 		width:1280,
@@ -17,20 +20,28 @@ Module.register("MMM-Cam", {
 		photoDir: "photos",
 },
 
+ /**
+  * Returns an array of stylesheet URLs that should be injected into the page.           
+  */
 	getStyles: function() {
 		return ["MMM-Cam.css", "font-awesome.css"];
 	},
 
+ /**
+  * The first function called when the module is loaded.           
+  */
 	start: function() {
 		this.session = {};
 		this.sendSocketNotification("INIT", this.config);
 		this.lastPhoto = null;
 	},
 
+ /**
+  * Returns the DOM element that will be injected into the page.           
+  */
 	getDom: function() {
 		if (this.config.displayButton != null) {
 			var wrapper = document.createElement("div");
-			// wrapper.innerHTML = "Take a Selfie";
 
 			var img = document.createElement("span");
 			img.className = "fa fa-" + this.config.displayButton + " fa-large";
@@ -43,6 +54,9 @@ Module.register("MMM-Cam", {
 		}
 	},
 
+ /**
+  * Prepares the DOM for the selfie module.
+  */
 	prepare: function() {
 		var dom = document.createElement("div");
 		dom.id = "SELFIE";
@@ -72,7 +86,31 @@ Module.register("MMM-Cam", {
 		dom.appendChild(result);
 		document.body.appendChild(dom);
 	},
+	
+ /**
+  * Receives a notification and acts accordingly.
+  * @param {string} noti - The notification to receive.
+  * @param {any} payload - The payload of the notification.
+	* @param {string} sender - The sender of the notification.
+  */
+	 notificationReceived: function(noti, payload, sender) {
+		 if (noti == "DOM_OBJECTS_CREATED") {
+			 this.prepare();
+			 //this.shoot()
+		 }
+		 if (noti == "SELFIE-EMPTY-STORE") {
+			 this.sendSocketNotification("EMPTY");
+		 }
+		 if (noti == "SELFIE-LAST") {
+			 this.showLastPhoto(this.lastPhoto);
+		 }
+	 },
 
+ /**
+  * Receives a notification and acts accordingly.
+  * @param {string} noti - The notification to receive.
+  * @param {any} payload - The payload of the notification.
+  */
 	socketNotificationReceived: function(noti, payload) {
 		if (noti == "__SHOOT-RESULT__") {
 			this.postShoot(payload);
@@ -99,6 +137,10 @@ Module.register("MMM-Cam", {
 		}
 	},
 	
+ /**
+  * Logs a message to the console if the debug flag is set.           
+  * @param {...string} msgs - the messages to log.           
+  */
 	debugLog: function(...msgs) {
 		if (this.config.debug) {
 			msgs.forEach(msg => {
@@ -107,6 +149,9 @@ Module.register("MMM-Cam", {
 		}
 	},
 	
+ /**
+  * Hides the camera and the selfie result element.           
+  */
 	exitCam: function() {
 		const self = this
 		if (self.config.displayResult) {
@@ -115,19 +160,15 @@ Module.register("MMM-Cam", {
 		}
 	},
 
-	notificationReceived: function(noti, payload, sender) {
-		if (noti == "DOM_OBJECTS_CREATED") {
-			this.prepare();
-			//this.shoot()
-		}
-		if (noti == "SELFIE-EMPTY-STORE") {
-			this.sendSocketNotification("EMPTY");
-		}
-		if (noti == "SELFIE-LAST") {
-			this.showLastPhoto(this.lastPhoto);
-		}
-	},
 
+ /**
+  * Shoots the selfie.           
+  * @param {Object} [option={}] - An object containing the following optional properties:           
+  * @param {boolean} [option.playShutter=this.config.playShutter] - Whether to play the shutter sound.           
+  * @param {boolean} [option.shootCountdown=this.config.shootCountdown] - Whether to show the countdown.           
+  * @param {Object} [session={}] - An object containing the following optional properties:           
+  * @param {boolean} [session.show=this.config.show] - Whether to show the selfie.                 
+  */
 	shoot: function(option={}, session={}) {
 		var showing = this.config.displayCountdown;
 		var sound = (option.hasOwnProperty("playShutter")) ? option.playShutter : this.config.playShutter;
@@ -160,6 +201,10 @@ Module.register("MMM-Cam", {
 		loop(countdown);
 	},
 
+ /**
+  * Post a notification to the mycroft server that a selfie was taken.           
+  * @param {SelfieResult} result - the selfie result object.           
+  */
 	postShoot: function(result) {
 		if (result.session.ext == "CALLBACK") {
 			if (this.session.hasOwnProperty(result.session.key)) {
@@ -173,8 +218,6 @@ Module.register("MMM-Cam", {
 			}
 		}
 		
-		this.sendNotification("SELFIE_RESULT", result);
-		this.sendNotification("GPHOTO_UPLOAD", result.path);
 		this.sendNotification("MYCROFT_COMMAND", {
 			eventName: "cam-skill:selfie_taken",
 			data: {
@@ -187,6 +230,10 @@ Module.register("MMM-Cam", {
 		this.debugLog("Selfie taken notification sent to mycroft.")
 	},
 
+ /**
+  * Shows the last photo taken.           
+  * @param {object} result - the result object from the last photo taken.           
+  */
 	showLastPhoto: function(result) {
 		this.debugLog("Showing last photo.");
 		var con = document.querySelector("#SELFIE");
