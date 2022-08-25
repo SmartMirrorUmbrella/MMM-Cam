@@ -1,56 +1,33 @@
 # MMM-Cam
 
-Taking a Selfie with USB cam on MagicMirror.
+Taking a Selfie with webcam on MagicMirror controlled by Mycroft.
 
 ## Installation
 
 ### Dependencies
 
-```sh
+```bash
 sudo apt install fswebcam 
+mycroft-pip install mailjet-rest
+git clone git@github.com:krukle-cam-skill.git ~/mycroft-core/skills/cam-skill
+git clone git@github.com:oenstrom/contacts-skill.git ~/mycroft-core/skills/contacts-skill
+git clone git@github.com:oenstrom/MMM-mycroft-bridge.git ~/MagicMirror/modules/MMM-mycroft-bridge
 ```
+
+> **Note**
+>
+> Change git clone destination according to your setup.
 
 ### Install
 
-```sh
-cd ~/MagicMirror/modules
-git clone https://github.com/SmartMirrorUmbrella/MMM-Cam
-cd MMM-Cam
-npm install
+```bash
+git clone https://github.com/SmartMirrorUmbrella/MMM-Cam ~/MagicMirror/modules/MMM-Cam
+npm --prefix ~/MagicMirror/modules/MMM-Cam install ~/MagicMirror/modules/MMM-Cam
 ```
 
 ## Configuration
 
-### Simple
-
-> This module doesn't need `position` of module unless you're using the touch button.
-
-```js
-{
-  disabled: false,
-  module: "MMM-Cam",
-  config: {}
-}
-```
-
-### Touch-Enabled
-
-To place a button on the mirror that you can click or touch, you will have to include a position and the name of the [Font Awesome](https://fontawesome.com/icons?d=gallery&q=selfie) icon.
-
-```js
-{
-  disabled: false,
-  module: "MMM-Cam",
-  position: "bottom_left",
-  config: {
-    displayButton: "portrait"
-  }
-}
-```
-
-### Defaults and Details
-
-> These values are set as default, you don't need to copy all of these. Just pick what you need only and add it into your `config:{}`
+These values are set as default, you don't need to copy all of these. Just pick what you need only and add it into your `config:{}`.
 
 ```js
 debug: true,
@@ -70,37 +47,25 @@ resultDuration: 120,
 photoDir: "photos",
 ```
 
-### Note
+## Messages
 
-- `width` & `height` : In some environment, resolution would be fixed so these value couldn't affect.
+### Emitted
 
-## How to use
+| Message | Data | About |
+| ------- | ---- | ----- |
+| cam-skill:selfie_taken | `{selfie: str, resultDuration: int}` | Emitted when a photo has been taken. `selfie` is path to picture and `resultDuration` decides how long selfie should be shown before cam is closed. |
 
-By `notification` **TAKE-SELFIE**
+### Subscribed
 
-Your other module can make an order to take a picture (Button, Voice Commander, Sensors,...)
+#### Mycroft bridge
 
-```js
-this.sendNotification("TAKE-SELFIE")
-//or
-this.sendNotification("TAKE-SELFIE", {
-  option: {
-    shootCountdown: 1,
-    playShutter: false,
-    displayCountdown: false,
-    // only these 3 properties are available.
-  }
-})
-//or
-this.sendNotification("TAKE-SELFIE", {
-  option: { ... },
-  callback: (result) => {
-    console.log(result) // It will have result.path and result.uri
-    this.doSomething(result)
-  }
-})
-```
+| Message | Data | About |
+| ------- | ---- | ----- |
+| TAKE-SELFIE | `{"option": {"shootCountdown": int, "playShutter": boolean, "displayCountdown": boolean}}` | Received when a photo should be taken. |
+| EXIT-CAM | `{}` | Received when cam interface should close. |
 
-`SELFIE-LAST` : You can display last photo taken on screen.
+#### MagicMirror bus
 
-Photos will be stored in `/photos` directory.
+| Message | Data | About |
+| ------- | ---- | ----- |
+| SELFIE-LAST | `{}` | Received when the last photo taken should be shown. |
